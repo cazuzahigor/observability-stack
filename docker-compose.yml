@@ -50,15 +50,13 @@ services:
     image: prom/alertmanager:v0.27.0
     container_name: alertmanager
     restart: unless-stopped
-    environment:
-      DISCORD_WEBHOOK_STATUS: ${DISCORD_WEBHOOK_STATUS}
-      DISCORD_WEBHOOK_INCIDENTS: ${DISCORD_WEBHOOK_INCIDENTS}
-      NTFY_TOPIC: ${NTFY_TOPIC}
     volumes:
-      - ./alertmanager/alertmanager.tmpl.yml:/etc/alertmanager/alertmanager.tmpl.yml:ro
-      - ./alertmanager/entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
-    entrypoint: ["/bin/sh", "/usr/local/bin/entrypoint.sh"]
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --web.external-url=http://localhost:9093
     expose:
       - "9093"
     ports:

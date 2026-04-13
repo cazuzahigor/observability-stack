@@ -12,3 +12,5 @@ data/
 *.swo
 .idea/
 .vscode/
+
+alertmanager/alertmanager.yml
