@@ -28,6 +28,6 @@ scrape_configs:
   - job_name: node_exporter
     static_configs:
       - targets:
-          - node_exporter:9100
+          - host.docker.internal:9100
         labels:
           instance: asymptora-prod-01
