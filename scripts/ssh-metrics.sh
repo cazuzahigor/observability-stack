@@ -23,8 +23,8 @@ if [ -r /var/log/auth.log ]; then
   FAILED=$(grep "Failed password" /var/log/auth.log 2>/dev/null | wc -l)
   ACCEPTED=$(grep -E "Accepted (password|publickey)" /var/log/auth.log 2>/dev/null | wc -l)
 else
-  FAILED=$(journalctl -u ssh --since "today" 2>/dev/null | grep -c "Failed password" || echo 0)
-  ACCEPTED=$(journalctl -u ssh --since "today" 2>/dev/null | grep -cE "Accepted (password|publickey)" || echo 0)
+  FAILED=$(journalctl -u ssh --since "today" 2>/dev/null | grep "Failed password" | wc -l)
+  ACCEPTED=$(journalctl -u ssh --since "today" 2>/dev/null | grep -E "Accepted (password|publickey)" | wc -l)
 fi
 
 cat > "$TMP" <<EOF
