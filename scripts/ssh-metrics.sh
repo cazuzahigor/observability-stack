@@ -20,8 +20,8 @@ mkdir -p "$TEXTFILE_DIR"
 ACTIVE=$(who | wc -l)
 
 if [ -r /var/log/auth.log ]; then
-  FAILED=$(grep -c "Failed password" /var/log/auth.log 2>/dev/null || echo 0)
-  ACCEPTED=$(grep -cE "Accepted (password|publickey)" /var/log/auth.log 2>/dev/null || echo 0)
+  FAILED=$(grep "Failed password" /var/log/auth.log 2>/dev/null | wc -l)
+  ACCEPTED=$(grep -E "Accepted (password|publickey)" /var/log/auth.log 2>/dev/null | wc -l)
 else
   FAILED=$(journalctl -u ssh --since "today" 2>/dev/null | grep -c "Failed password" || echo 0)
   ACCEPTED=$(journalctl -u ssh --since "today" 2>/dev/null | grep -cE "Accepted (password|publickey)" || echo 0)
