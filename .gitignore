@@ -1,0 +1,14 @@
+# Secrets and environment
+.env
+*.secret
+
+# Runtime data
+data/
+*.db
+
+# Editor / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
