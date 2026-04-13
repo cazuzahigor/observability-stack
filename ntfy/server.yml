@@ -1,0 +1,8 @@
+listen-http: ":2586"
+base-url: "http://asymptora-prod-01:2586"
+cache-file: "/var/cache/ntfy/cache.db"
+cache-duration: "12h"
+auth-file: "/var/lib/ntfy/user.db"
+auth-default-access: "deny-all"
+behind-proxy: false
+attachment-cache-dir: ""
