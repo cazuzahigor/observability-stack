@@ -1,0 +1,192 @@
+groups:
+  - name: heartbeat
+    interval: 30s
+    rules:
+      - alert: InfraStatusHeartbeat
+        expr: vector(1)
+        labels:
+          severity: heartbeat
+          category: status
+          instance: asymptora-prod-01
+        annotations:
+          summary: "Periodic status for asymptora-prod-01"
+          description: "Host is alive and responding. See Grafana for detailed metrics."
+
+  - name: host-health
+    interval: 30s
+    rules:
+      - alert: HostDown
+        expr: up{job="node_exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Host {{ $labels.instance }} is down"
+          description: "node_exporter has not responded for more than 1 minute."
+
+      - alert: HostRebooted
+        expr: time() - node_boot_time_seconds < 300
+        for: 0m
+        labels:
+          severity: warning
+          category: availability
+        annotations:
+          summary: "Host {{ $labels.instance }} rebooted recently"
+          description: "Current uptime is less than 5 minutes. Investigate the cause."
+
+      - alert: HighLoadAverage
+        expr: node_load1 / count without (cpu, mode) (node_cpu_seconds_total{mode="idle"}) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          category: saturation
+        annotations:
+          summary: "High load on {{ $labels.instance }}"
+          description: "Per-CPU load1 = {{ $value | printf \"%.2f\" }} (threshold 1.5)."
+
+      - alert: CriticalLoadAverage
+        expr: node_load1 / count without (cpu, mode) (node_cpu_seconds_total{mode="idle"}) > 3
+        for: 2m
+        labels:
+          severity: critical
+          category: saturation
+        annotations:
+          summary: "CRITICAL load on {{ $labels.instance }}"
+          description: "Per-CPU load1 = {{ $value | printf \"%.2f\" }}."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: utilization
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage at {{ $value | printf \"%.1f\" }}% for more than 10 minutes."
+
+      - alert: HighIOWait
+        expr: avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 30
+        for: 5m
+        labels:
+          severity: warning
+          category: saturation
+        annotations:
+          summary: "High I/O wait on {{ $labels.instance }}"
+          description: "iowait at {{ $value | printf \"%.1f\" }}% — disk may be saturated."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: utilization
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage at {{ $value | printf \"%.1f\" }}%."
+
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: utilization
+        annotations:
+          summary: "CRITICAL memory usage on {{ $labels.instance }}"
+          description: "Memory usage at {{ $value | printf \"%.1f\" }}% — OOM risk."
+
+      - alert: SwapUsageHigh
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 50
+        for: 10m
+        labels:
+          severity: warning
+          category: saturation
+        annotations:
+          summary: "Heavy swap usage on {{ $labels.instance }}"
+          description: "Swap at {{ $value | printf \"%.1f\" }}% — memory pressure symptom."
+
+      - alert: DiskSpaceWarning
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          category: utilization
+        annotations:
+          summary: "Disk filling up on {{ $labels.instance }}"
+          description: "{{ $value | printf \"%.1f\" }}% available on /."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          category: utilization
+        annotations:
+          summary: "CRITICAL disk usage on {{ $labels.instance }}"
+          description: "{{ $value | printf \"%.1f\" }}% available on /."
+
+      - alert: InodesRunningOut
+        expr: (node_filesystem_files_free{mountpoint="/"} / node_filesystem_files{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          category: utilization
+        annotations:
+          summary: "Inodes running out on {{ $labels.instance }}"
+          description: "Only {{ $value | printf \"%.1f\" }}% of inodes free."
+
+      - alert: ClockSkewDetected
+        expr: abs(node_timex_offset_seconds) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: integrity
+        annotations:
+          summary: "Clock out of sync on {{ $labels.instance }}"
+          description: "NTP offset = {{ $value }}s."
+
+  - name: systemd-services
+    interval: 30s
+    rules:
+      - alert: SystemdServiceFailed
+        expr: node_systemd_unit_state{state="failed"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.name }} failed on {{ $labels.instance }}"
+          description: "systemd unit in failed state. Investigate with journalctl -u {{ $labels.name }}."
+
+      - alert: SSHServiceDown
+        expr: node_systemd_unit_state{name="ssh.service",state="active"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "SSH is down on {{ $labels.instance }}"
+          description: "ssh.service is not active. Remote access is compromised."
+
+  - name: ssh-security
+    interval: 30s
+    rules:
+      - alert: SSHSessionOpened
+        expr: increase(ssh_active_sessions[1m]) > 0
+        for: 0m
+        labels:
+          severity: info
+          category: security
+        annotations:
+          summary: "New SSH session on {{ $labels.instance }}"
+          description: "Active sessions: {{ $value }}. Confirm with `who` on the host."
+
+      - alert: SSHFailedLoginsBurst
+        expr: increase(ssh_failed_logins_total[5m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "SSH login attempts failing on {{ $labels.instance }}"
+          description: "{{ $value }} failed attempts in the last 5 minutes. Possible brute-force."
