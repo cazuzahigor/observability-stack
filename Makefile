@@ -20,7 +20,7 @@ down:
 	docker compose down
 
 restart: render
-	docker compose restart alertmanager
+	docker compose up -d --force-recreate alertmanager
 
 logs:
 	docker compose logs -f --tail=50
